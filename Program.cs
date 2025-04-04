@@ -72,11 +72,15 @@ class Program
         // Handle preflight OPTIONS request for CORS
         if (request.HttpMethod == "OPTIONS")
         {
-            response.StatusCode = 200;
+            response.StatusCode = 204; // 200 yerine 204 daha yaygın
+            response.AddHeader("Access-Control-Allow-Origin", "*");
+            response.AddHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+            response.AddHeader("Access-Control-Allow-Headers", "Content-Type");
             response.ContentLength64 = 0;
             response.OutputStream.Close();
             return;
         }
+
         if (request.HttpMethod == "POST")
         {
             Console.WriteLine($"Request method: {urlPath}");
@@ -129,7 +133,6 @@ class Program
                 }
 
             }
-            // Motor kontrol istekleri
             else if (urlPath.Contains("toggle_"))
             {
                 if (string.IsNullOrEmpty(selectedRobotType))
@@ -202,6 +205,23 @@ class Program
                 responseString = "{\"message\": \"All robots stopped.\"}";
 
             }
+            else if (urlPath == "api/robot/update-joint-value")
+            {
+                string requestBody = new StreamReader(request.InputStream).ReadToEnd();
+                var jointSelection = JsonSerializer.Deserialize<JointSelectionRequest>(requestBody);
+                if (jointSelection.value != null)
+                {
+                    Console.WriteLine($"Joint value received: {jointSelection.value}");
+                    Console.WriteLine($"Joint index: {jointSelection.jointIndex}");
+                // KADIRE MESAJ JOINT VALUE -1 Mİ 0 MI + 1 Mİ onu belli ediyor
+                // KADIRE MESAJ JOINT INDEX  1. mi 2. mi 0 İSE 1.EKSEN 1 İSE 2.EKSEN
+                    responseString = JsonSerializer.Serialize(new { message = $"Joint value set to {jointSelection.value}" });
+                }
+                else
+                {
+                    responseString = JsonSerializer.Serialize(new { message = "Invalid request body." });
+                }
+            }
         }
         else if (request.HttpMethod == "GET" && urlPath == "api/robot/robot_status")
         {
@@ -255,4 +275,9 @@ class Program
 public class RobotSelectionRequest
 {
     public string type { get; set; }
+}
+public class JointSelectionRequest
+{
+    public int jointIndex { get; set; } // Ensure this matches the JSON type
+    public double value { get; set; }
 }
