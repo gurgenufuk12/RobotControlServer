@@ -115,7 +115,7 @@ class Program
                     responseString = JsonSerializer.Serialize(new { message = "Invalid request body." });
                 }
             }
-            if (urlPath == "api/robot/choose-active-robot")
+            else if (urlPath == "api/robot/choose-active-robot")
             {
                 //Burqada frontendeki robot seçimi yapılacak ve robotName değişkenine atanacak
                 string requestBody = new StreamReader(request.InputStream).ReadToEnd();
@@ -213,9 +213,9 @@ class Program
                 {
                     Console.WriteLine($"Joint value received: {jointSelection.value}");
                     Console.WriteLine($"Joint index: {jointSelection.jointIndex}");
-                // KADIRE MESAJ JOINT VALUE -1 Mİ 0 MI + 1 Mİ onu belli ediyor
-                // KADIRE MESAJ JOINT INDEX  1. mi 2. mi 0 İSE 1.EKSEN 1 İSE 2.EKSEN
-                    responseString = JsonSerializer.Serialize(new { message = $"Joint value set to {jointSelection.value}" });
+                    // KADIRE MESAJ JOINT VALUE -1 Mİ 0 MI + 1 Mİ onu belli ediyor
+                    // KADIRE MESAJ JOINT INDEX  1. mi 2. mi 0 İSE 1.EKSEN 1 İSE 2.EKSEN
+                    responseString = JsonSerializer.Serialize(new { message = $"Motor{jointSelection.value + 1} hız veriliyor" });
                 }
                 else
                 {
@@ -223,8 +223,9 @@ class Program
                 }
             }
         }
-        else if (request.HttpMethod == "GET" && urlPath == "api/robot/robot_status")
-        {
+        else if (request.HttpMethod == "GET" && urlPath == "api/robot/get_motor_status")
+        {   
+
             responseString = GetRobotStatus();
         }
         else if (request.HttpMethod == "GET" && urlPath == "api/robot/selected_robot")
@@ -261,16 +262,36 @@ class Program
         return $"{{\"Motor\": \"{motorName}\", \"Durum\": \"{(motorStates[robotName][motorName] ? "ON" : "OFF")}\"}}";
     }
 
-    static string GetRobotStatus()
+static string GetRobotStatus()
+{
+    if (string.IsNullOrEmpty(robotName))
     {
-        if (string.IsNullOrEmpty(robotName))
-        {
-            return "{\"message\": \"No robot selected. Please select robot type first.\"}";
-        }
-
-        // Seçilen robot tipine göre motor durumları döndürülür
-        return "{" + string.Join(", ", motorStates[robotName].Select(m => $"\"{m.Key}\": \"{(m.Value ? "ON" : "OFF")}\"")) + "}";
+        return "{\"message\": \"No robot selected. Please select robot type first.\"}";
     }
+    else
+    {
+
+        var motorsDict = new Dictionary<string, bool>();
+        
+     
+        foreach (var motor in motorStates[robotName])
+        {
+
+            string motorKey = motor.Key;
+            if (motorKey.Contains("_"))
+            {
+                motorKey = motorKey.Split('_')[1];
+            }
+            
+            motorsDict[motorKey] = motor.Value;
+        }
+        
+
+        var response = new { motors = motorsDict };
+        
+        return JsonSerializer.Serialize(response);
+    }
+}
 }
 public class RobotSelectionRequest
 {
@@ -278,6 +299,6 @@ public class RobotSelectionRequest
 }
 public class JointSelectionRequest
 {
-    public int jointIndex { get; set; } // Ensure this matches the JSON type
+    public int jointIndex { get; set; }
     public double value { get; set; }
 }
