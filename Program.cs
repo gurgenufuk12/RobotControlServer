@@ -84,143 +84,164 @@ class Program
         if (request.HttpMethod == "POST")
         {
             Console.WriteLine($"Request method: {urlPath}");
-            // Robot tipi seçimi (2 eksenli veya 6 eksenli)
-            if (urlPath == "api/robot/choose_robot_axis")
+            switch (urlPath)
             {
-                // Read the request body
-                string requestBody = new StreamReader(request.InputStream).ReadToEnd();
-
-                // Deserialize the incoming JSON data
-                var robotSelection = JsonSerializer.Deserialize<RobotSelectionRequest>(requestBody);
-
-                if (robotSelection != null)
-                {
-                    Console.WriteLine($"Axis count received: {robotSelection.type}");
-
-                    // Validate and set the robot type
-                    if (robotSelection.type == "scara" || robotSelection.type == "industrial")
+                case "api/robot/choose_robot_axis":
                     {
-                        selectedRobotType = robotSelection.type;
-                        Console.WriteLine(selectedRobotType);
-                        responseString = JsonSerializer.Serialize(new { message = $"Robot type set to {selectedRobotType}-axis" });
-                        // Console.WriteLine($"Robot type set to {selectedRobotType}-axis");
-                    }
-                    else
-                    {
-                        responseString = JsonSerializer.Serialize(new { message = "Invalid axis count. Please select 'scara' or 'industrial'." });
-                    }
-                }
-                else
-                {
-                    responseString = JsonSerializer.Serialize(new { message = "Invalid request body." });
-                }
-            }
-            else if (urlPath == "api/robot/choose-active-robot")
-            {
-                //Burqada frontendeki robot seçimi yapılacak ve robotName değişkenine atanacak
-                string requestBody = new StreamReader(request.InputStream).ReadToEnd();
-                Console.WriteLine($"Request body: {requestBody}");
-                var robotSelection = JsonSerializer.Deserialize<RobotSelectionRequest>(requestBody);
-                if (robotSelection != null)
-                {
-                    Console.WriteLine($"Robot name received: {robotSelection.type}");
-                    robotName = robotSelection.type;
-                    responseString = JsonSerializer.Serialize(new { message = $"Robot name set to {robotName}" });
-                }
-                else
-                {
-                    responseString = JsonSerializer.Serialize(new { message = "Invalid request body." });
-                }
+                        // Read the request body
+                        string requestBody = new StreamReader(request.InputStream).ReadToEnd();
 
-            }
-            else if (urlPath.Contains("toggle_"))
-            {
-                if (string.IsNullOrEmpty(selectedRobotType))
-                {
-                    responseString = "{\"message\": \"No robot selected. Please select robot type first.\"}";
-                }
-                else
-                {
-                    string motorKey = urlPath.Replace("api/robot/toggle_", "");
+                        // Deserialize the incoming JSON data
+                        var robotSelection = JsonSerializer.Deserialize<RobotSelectionRequest>(requestBody);
 
-                    if (IsMotorInSelectedRobot(motorKey))
-                    {
-                        // Console.WriteLine($"Motor key received: {motorKey}");
-                        robotName = motorKey.Split('_')[0];
-                        // Console.WriteLine($"Robot name: {robotName}");
-                        motorStates[robotName][motorKey] = !motorStates[robotName][motorKey];
-                        responseString = CreateMotorResponse(motorKey, robotName);
-                        // Console.WriteLine($"Motor state toggled: {motorKey} is now {(motorStates[robotName][motorKey] ? "ON" : "OFF")}");
-                    }
-                    else
-                    {
-                        responseString = "{\"message\": \"Motor not available for selected robot type.\"}";
-                    }
-                }
-            }
-            else if (urlPath == "api/robot/toggle-all-motors-on")
-            {
-                // Console.WriteLine(robotName);
-                // Console.WriteLine("asdasdasdasdasdsa");
-                if (string.IsNullOrEmpty(robotName))
-                {
-                    responseString = "{\"message\": \"No robot selected. Please select robot type first.\"}";
-                }
-                else
-                {
-                    foreach (var motor in motorStates[robotName])
-                    {
-                        motorStates[robotName][motor.Key] = true;
-                    }
-                    responseString = "{\"message\": \"All motors turned ON.\"}";
-                }
-            }
-            else if (urlPath == "api/robot/emergency-stop")
-            {
-                if (string.IsNullOrEmpty(robotName))
-                {
-                    responseString = "{\"message\": \"No robot selected. Please select robot type first.\"}";
-                }
-                else
-                {
-                    foreach (var motor in motorStates[robotName])
-                    {
-                        motorStates[robotName][motor.Key] = false;
-                    }
-                    responseString = GetRobotStatus();
-                }
+                        if (robotSelection != null)
+                        {
+                            Console.WriteLine($"Axis count received: {robotSelection.type}");
 
-            }
-            else if (urlPath == "api/robot/general-emergency-stop")
-            {
-                // 2 motoru olan bütün robotları durdur
-                foreach (var robot in motorStates)
-                {
-                    foreach (var motor in robot.Value)
-                    {
-                        motorStates[robot.Key][motor.Key] = false;
+                            // Validate and set the robot type
+                            if (robotSelection.type == "scara" || robotSelection.type == "industrial")
+                            {
+                                selectedRobotType = robotSelection.type;
+                                Console.WriteLine(selectedRobotType);
+                                responseString = JsonSerializer.Serialize(new { message = $"Robot type set to {selectedRobotType}-axis" });
+                                // Console.WriteLine($"Robot type set to {selectedRobotType}-axis");
+                            }
+                            else
+                            {
+                                responseString = JsonSerializer.Serialize(new { message = "Invalid axis count. Please select 'scara' or 'industrial'." });
+                            }
+                        }
+                        else
+                        {
+                            responseString = JsonSerializer.Serialize(new { message = "Invalid request body." });
+                        }
                     }
-                }
+                    break;
+                    
+                case "api/robot/choose-active-robot":
+                    {
+                        //Burqada frontendeki robot seçimi yapılacak ve robotName değişkenine atanacak
+                        string requestBody = new StreamReader(request.InputStream).ReadToEnd();
+                        Console.WriteLine($"Request body: {requestBody}");
+                        var robotSelection = JsonSerializer.Deserialize<RobotSelectionRequest>(requestBody);
+                        if (robotSelection != null)
+                        {
+                            Console.WriteLine($"Robot name received: {robotSelection.type}");
+                            robotName = robotSelection.type;
+                            responseString = JsonSerializer.Serialize(new { message = $"Robot name set to {robotName}" });
+                        }
+                        else
+                        {
+                            responseString = JsonSerializer.Serialize(new { message = "Invalid request body." });
+                        }
+                    }
+                    break;
+                    
+                case "api/robot/toggle-all-motors-on":
+                    {
+                        // Console.WriteLine(robotName);
+                        // Console.WriteLine("asdasdasdasdasdsa");
+                        if (string.IsNullOrEmpty(robotName))
+                        {
+                            responseString = "{\"message\": \"No robot selected. Please select robot type first.\"}";
+                        }
+                        else
+                        {
+                            foreach (var motor in motorStates[robotName])
+                            {
+                                motorStates[robotName][motor.Key] = true;
+                            }
+                            responseString = "{\"message\": \"All motors turned ON.\"}";
+                        }
+                    }
+                    break;
+                    
+                case "api/robot/emergency-stop":
+                    {
+                        if (string.IsNullOrEmpty(robotName))
+                        {
+                            responseString = "{\"message\": \"No robot selected. Please select robot type first.\"}";
+                        }
+                        else
+                        {
+                            foreach (var motor in motorStates[robotName])
+                            {
+                                motorStates[robotName][motor.Key] = false;
+                            }
+                            responseString = GetRobotStatus();
+                        }
+                    }
+                    break;
+                    
+                case "api/robot/general-emergency-stop":
+                    {
+                        // 2 motoru olan bütün robotları durdur
+                        foreach (var robot in motorStates)
+                        {
+                            foreach (var motor in robot.Value)
+                            {
+                                motorStates[robot.Key][motor.Key] = false;
+                            }
+                        }
 
-                responseString = "{\"message\": \"All robots stopped.\"}";
+                        responseString = "{\"message\": \"All robots stopped.\"}";
+                    }
+                    break;
+                    
+                case "api/robot/update-joint-value":
+                    {
+                        string requestBody = new StreamReader(request.InputStream).ReadToEnd();
+                        try 
+                        {
+                            var jointSelection = JsonSerializer.Deserialize<JointSelectionRequest>(requestBody);
+                            if (jointSelection != null && jointSelection.value != null)
+                            {
+                                Console.WriteLine($"Joint value received: {jointSelection.value}");
+                                Console.WriteLine($"Joint index: {jointSelection.jointIndex}");
+                                // KADIRE MESAJ JOINT VALUE -1 Mİ 0 MI + 1 Mİ onu belli ediyor
+                                // KADIRE MESAJ JOINT INDEX  1. mi 2. mi 0 İSE 1.EKSEN 1 İSE 2.EKSEN
+                                responseString = JsonSerializer.Serialize(new { message = $"Motor{jointSelection.value + 1} hız veriliyor" });
+                            }
+                            else
+                            {
+                                responseString = JsonSerializer.Serialize(new { message = "Invalid request body." });
+                            }
+                        }
+                        catch (JsonException ex)
+                        {
+                            Console.WriteLine($"JSON deserialization error: {ex.Message}");
+                            responseString = JsonSerializer.Serialize(new { message = "Invalid JSON format." });
+                        }
+                    }
+                    break;
+                    
+                default:
+                    if (urlPath.Contains("toggle_"))
+                    {
+                        if (string.IsNullOrEmpty(selectedRobotType))
+                        {
+                            responseString = "{\"message\": \"No robot selected. Please select robot type first.\"}";
+                        }
+                        else
+                        {
+                            string motorKey = urlPath.Replace("api/robot/toggle_", "");
 
-            }
-            else if (urlPath == "api/robot/update-joint-value")
-            {
-                string requestBody = new StreamReader(request.InputStream).ReadToEnd();
-                var jointSelection = JsonSerializer.Deserialize<JointSelectionRequest>(requestBody);
-                if (jointSelection.value != null)
-                {
-                    Console.WriteLine($"Joint value received: {jointSelection.value}");
-                    Console.WriteLine($"Joint index: {jointSelection.jointIndex}");
-                    // KADIRE MESAJ JOINT VALUE -1 Mİ 0 MI + 1 Mİ onu belli ediyor
-                    // KADIRE MESAJ JOINT INDEX  1. mi 2. mi 0 İSE 1.EKSEN 1 İSE 2.EKSEN
-                    responseString = JsonSerializer.Serialize(new { message = $"Motor{jointSelection.value + 1} hız veriliyor" });
-                }
-                else
-                {
-                    responseString = JsonSerializer.Serialize(new { message = "Invalid request body." });
-                }
+                            if (IsMotorInSelectedRobot(motorKey))
+                            {
+                                // Console.WriteLine($"Motor key received: {motorKey}");
+                                robotName = motorKey.Split('_')[0];
+                                // Console.WriteLine($"Robot name: {robotName}");
+                                motorStates[robotName][motorKey] = !motorStates[robotName][motorKey];
+                                responseString = CreateMotorResponse(motorKey, robotName);
+                                // Console.WriteLine($"Motor state toggled: {motorKey} is now {(motorStates[robotName][motorKey] ? "ON" : "OFF")}");
+                            }
+                            else
+                            {
+                                responseString = "{\"message\": \"Motor not available for selected robot type.\"}";
+                            }
+                        }
+                    }
+                    break;
             }
         }
         else if (request.HttpMethod == "GET" && urlPath == "api/robot/get_motor_status")
