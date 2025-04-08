@@ -33,7 +33,32 @@ class Program
             }
         }
     };
-
+    public static readonly Dictionary<string, Dictionary<string, float>> jointStates = new()
+    {
+        {"robot1", new Dictionary<string,float>
+            {
+                {"robot1_joint1", 0.0f},
+                {"robot1_joint2", 0.0f}
+            }
+        },
+        {"robot2", new Dictionary<string, float>
+            {
+                {"robot2_joint1", 0.0f},
+                {"robot2_joint2", 0.0f}
+            }
+        },
+        // 6 eksenli robot için mojointlar
+        {"robot3", new Dictionary<string, float>
+            {
+                {"robot3_joint1", 0.0f},
+                {"robot3_joint2", 0.0f},
+                {"robot3_joint3", 0.0f},
+                {"robot3_joint4", 0.0f},
+                {"robot3_joint5", 0.0f},
+                {"robot3_joint6", 0.0f}
+            }
+        }
+    };
     private static string selectedRobotType = ""; // Seçilen robot tipi (2 eksenli ya da 6 eksenli)
     private static string robotName = ""; // Motor ismi için kullanılacak değişken
     static void Main()
@@ -225,13 +250,36 @@ class Program
         }
         else if (request.HttpMethod == "GET" && urlPath == "api/robot/get_motor_status")
         {   
-
             responseString = GetRobotStatus();
         }
         else if (request.HttpMethod == "GET" && urlPath == "api/robot/selected_robot")
         {
             responseString = $"{{\"selected_robot\": \"{selectedRobotType}\"}}";
         }
+        else if (request.HttpMethod == "GET" && urlPath == "api/robot/get_joint_value")
+        {
+            //create respornse stirng accordşng to robotName
+            if (string.IsNullOrEmpty(robotName))
+            {
+                responseString = "{\"message\": \"No robot selected. Please select robot type first.\"}";
+            }
+            else
+            {
+                var jointDict = new Dictionary<string, float>();
+                foreach (var joint in jointStates[robotName])
+                {
+                    string jointKey = joint.Key;
+                    if (jointKey.Contains("_"))
+                    {
+                        jointKey = jointKey.Split('_')[1];
+                    }
+                    jointDict[jointKey] = joint.Value;
+                }
+                var res = new { joints = jointDict };
+                responseString = JsonSerializer.Serialize(res);
+            }   
+        }
+
 
         byte[] buffer = Encoding.UTF8.GetBytes(responseString);
         response.ContentLength64 = buffer.Length;
