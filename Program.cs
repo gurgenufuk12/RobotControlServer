@@ -61,6 +61,7 @@ class Program
     };
     private static string selectedRobotType = ""; // Seçilen robot tipi (2 eksenli ya da 6 eksenli)
     private static string robotName = ""; // Motor ismi için kullanılacak değişken
+    private static string programCode = ""; // Program kodu için kullanılacak değişken
     static void Main()
     {
         HttpListener listener = new HttpListener();
@@ -247,6 +248,23 @@ class Program
                     responseString = JsonSerializer.Serialize(new { message = "Invalid request body." });
                 }
             }
+            else if(urlPath == "api/robot/send-program-code")
+            {
+                string requestBody = new StreamReader(request.InputStream).ReadToEnd();
+                Console.WriteLine($"Request body: {requestBody}");
+                var programCodeRequest = JsonSerializer.Deserialize<RobotProgramCodeRequest>(requestBody);
+                if (programCodeRequest != null)
+                {
+                    programCode = programCodeRequest.programCode;
+                    Console.WriteLine(programCode);
+                    // SEND DATA TO ROBOT USING GUI 
+                    responseString = JsonSerializer.Serialize(new { message = $"Program code set to {programCode}" });
+                }
+                else
+                {
+                    responseString = JsonSerializer.Serialize(new { message = "Invalid request body." });
+                }
+            }
         }
         else if (request.HttpMethod == "GET" && urlPath == "api/robot/get_motor_status")
         {   
@@ -349,4 +367,9 @@ public class JointSelectionRequest
 {
     public int jointIndex { get; set; }
     public double value { get; set; }
+}
+
+public class RobotProgramCodeRequest
+{
+    public string programCode { get; set; }
 }
